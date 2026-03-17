@@ -10,7 +10,8 @@ import UIKit
 class PersonCell: UICollectionViewCell {
     
     let liquidGlassView: UIVisualEffectView = {
-        let liquidGlass = UIGlassEffect(style: .clear)
+//        let liquidGlass = UIGlassEffect(style: .clear)
+        let liquidGlass = UIBlurEffect(style: .systemThickMaterial)
         let liquidGlassEffect = UIVisualEffectView(effect: liquidGlass)
         
         return liquidGlassEffect

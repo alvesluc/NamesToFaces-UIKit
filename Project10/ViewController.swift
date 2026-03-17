@@ -9,8 +9,8 @@ import UIKit
 import PhotosUI
 
 class ViewController: UICollectionViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, PHPickerViewControllerDelegate {
-    
     var people = [Person]()
+    let defaults = UserDefaults.standard
     
     init() {
         let layout = UICollectionViewFlowLayout()
@@ -26,6 +26,14 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let defaults = UserDefaults.standard
+        
+        if let savedPeople = defaults.object(forKey: "people") as? Data {
+            if let decodedPeople = try? NSKeyedUnarchiver.unarchivedArrayOfObjects(ofClass: Person.self, from: savedPeople) {
+                people = decodedPeople
+            }
+        }
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "plus"),
@@ -78,6 +86,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         let person = Person(name: "Unknown", image: imageName)
         people.append(person)
         collectionView.reloadData()
+        save()
     }
     
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
@@ -100,8 +109,16 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
                     let person = Person(name: "Unknown", image: imageName)
                     self?.people.append(person)
                     self?.collectionView.reloadData()
+                    self?.save()
                 }
             }
+        }
+    }
+    
+    func save() {
+        if let savedData = try? NSKeyedArchiver.archivedData(withRootObject: people, requiringSecureCoding: true) {
+            let defaults = UserDefaults.standard
+            defaults.set(savedData, forKey: "people")
         }
     }
     
@@ -132,6 +149,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         let person = people[indexPath.item]
         
         let selectActionAC = UIAlertController(title: "Select action", message: nil, preferredStyle: .actionSheet)
+        
         selectActionAC.addAction(UIAlertAction(title: "Rename", style: .default) { [weak self] _ in
             let ac = UIAlertController(title: "Renaming person", message: nil, preferredStyle: .alert)
             ac.addTextField()
@@ -140,15 +158,19 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
                 guard let newName = ac?.textFields?[0].text else { return }
                 person.name = newName
                 
-                self?.collectionView.reloadData()
+                self?.collectionView.reloadItems(at: [indexPath])
+                self?.save()
             })
             
             self?.present(ac, animated: true)
         })
+        
         selectActionAC.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
             self?.people.remove(at: indexPath.item)
             self?.collectionView.deleteItems(at: [indexPath])
+            self?.save()
         })
+        
         selectActionAC.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         
         present(selectActionAC, animated: true)
